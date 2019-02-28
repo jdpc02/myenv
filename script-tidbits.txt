@@ -1,0 +1,2 @@
+Using jq to parse json:
+* jq ".[] | select(.Name | contains (\"something\")) | { Name: .Name, Image Identifier: .imagedid }"
