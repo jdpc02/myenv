@@ -63,7 +63,7 @@ Add new SSH key to github profile
 ```
 
 
-** chroot troubleshooting **
+**chroot troubleshooting**
 
 1. Determine the root partition. Mount the partition.
 ```
