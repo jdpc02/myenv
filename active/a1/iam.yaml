@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ALB with ASG IAM Stack
+Parameters:
+  Env:
+    Type: String
+  ContactInfo:
+    Type: String
+  ContactEmail:
+    Type: String
+  ThisRegion:
+    Type: String
+
+Resource:
+  AssumeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'ec2.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        -
+          PolicyName: !Join
+          - '-'
+          - -  !Ref ThisRegion
+            -  !Ref Env
+            - 'client-role'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: 'Allow'
+                Action:
+                  - ec2:describe*
+                  - ec2:createtags*
+                  - ec2:DescribeInstanceStatus
+                Resource: '*'
+              -
+                Effect: 'Allow'
+                Action:
+                  - s3:locate*
+                  - s3:list*
+                  - s3:get*
+                Resource: '*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DependsOn: AssumeRole
+    Properties:
+      Roles:
+        - !Ref AssumeRole
+
+Outputs:
+  InstanceProfile:
+    Description: IAM Instance Profile for ALB with ASG
+    Value: !GetAtt InstanceProfile.Arn
+    Export:
+      Name: !Join
+      - '-'
+      - -  !Ref ThisRegion
+        -  !Ref Env
+        - 'instprof'

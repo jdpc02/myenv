@@ -1,0 +1,322 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Onica DevOps Test 2.1
+Parameters:
+  Env:
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - prod
+      - nonprod
+      - sandbox
+    Description: 'Deployment Environment'
+
+  ContactInfo:
+    Typ: String
+    Default: 'VPC Group'
+    Description: 'Contact for VPC'
+
+  ContactEmail:
+    Typ: String
+    Default: 'vpcgroup@company.info'
+    Description: 'Contact email for VPC'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: VPC Environment
+      Parameters:
+      - Env
+    - Label:
+        default: Tags
+      Parameters:
+      - ContactInfo
+      - ContactEmail
+    ParameterLabels:
+      Env:
+        default: VPC Application Environment
+      ContactInfo:
+        default: Contact group or person responsible for the VPC
+      ContactEmail:
+        default: Contact email
+
+Mappings:
+  AZRegions:
+    us-east-1:
+      A: us-east-1a
+      B: us-east-1b
+      C: us-east-1c
+    us-west-2:
+      A: us-west-2a
+      B: us-west-2b
+      C: us-west-2c
+
+  CIDRRegions:
+    us-east-1:
+      prod: 10.30.0.0/18
+      nonprod: 10.30.64.0/18
+      sandbox: 10.30.128.0/18
+    us-west-2:
+      prod: 172.30.0.0/18
+      nonprod: 172.30.64.0/18
+      sandbox: 172.30.128.0/18
+
+  SNEnv:
+    prod:
+      frontend: feprod
+      app: appprod
+      db: dbprod
+    nonprod:
+      frontend: fenonprod
+      app: appnonprod
+      db: dbnonprod
+    sandbox:
+      frontend: fesb
+      app: appsb
+      db: dbsb
+
+  SNCIDR:
+    us-east-1a:
+      feprod: 10.30.0.0/22
+      appprod: 10.30.4.0/22
+      dbprod: 10.30.8.0/22
+      fenonprod: 10.30.64.0/22
+      appnonprod: 10.30.68.0/22
+      dbnonprod: 10.30.72.0/22
+      fesb: 10.30.128.0/22
+      appsb: 10.30.132.0/22
+      dbsb: 10.30.136.0/22
+    us-east-1b:
+      feprod: 10.30.12.0/22
+      appprod: 10.30.16.0/22
+      dbprod: 10.30.20.0/22
+      fenonprod: 10.30.76.0/22
+      appnonprod: 10.30.80.0/22
+      dbnonprod: 10.30.84.0/22
+      fesb: 10.30.140.0/22
+      appsb: 10.30.144.0/22
+      dbsb: 10.30.148.0/22
+    us-east-1c:
+      feprod: 10.30.24.0/22
+      appprod: 10.30.28.0/22
+      dbprod: 10.30.32.0/22
+      fenonprod: 10.30.88.0/22
+      appnonprod: 10.30.92.0/22
+      dbnonprod: 10.30.96.0/22
+      fesb: 10.30.152.0/22
+      appsb: 10.30.156.0/22
+      dbsb: 10.30.160.0/22
+    us-west-1a:
+      feprod: 172.30.0.0/22
+      appprod: 172.30.4.0/22
+      dbprod: 172.30.8.0/22
+      fenonprod: 172.30.64.0/22
+      appnonprod: 172.30.68.0/22
+      dbnonprod: 172.30.72.0/22
+      fesb: 172.30.128.0/22
+      appsb: 172.30.132.0/22
+      dbsb: 172.30.136.0/22
+    us-east-1b:
+      feprod: 172.30.12.0/22
+      appprod: 172.30.16.0/22
+      dbprod: 172.30.20.0/22
+      fenonprod: 172.30.76.0/22
+      appnonprod: 172.30.80.0/22
+      dbnonprod: 172.30.84.0/22
+      fesb: 172.30.140.0/22
+      appsb: 172.30.144.0/22
+      dbsb: 172.30.148.0/22
+    us-east-1c:
+      feprod: 172.30.24.0/22
+      appprod: 172.30.28.0/22
+      dbprod: 172.30.32.0/22
+      fenonprod: 172.30.88.0/22
+      appnonprod: 172.30.92.0/22
+      dbnonprod: 172.30.96.0/22
+      fesb: 172.30.152.0/22
+      appsb: 172.30.156.0/22
+      dbsb: 172.30.160.0/22
+
+Conditions:
+  IsNotSB: !Not [ !Equals [!Ref Env, 'sandbox'] ]
+
+Resources:
+  clientVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [CIDRRegions, !Ref 'AWS::Region', !Ref Env]
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      InstanceTenancy: default
+      Tags:
+        - Key: Name 
+          Value: client-VPC
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientIG:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: client-IG
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientAttachIG:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref clientVPC
+      InternetGatewayId: !Ref clientIG
+
+  clientRTExternal:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref clientVPC
+      Tags:
+        - Key: Name
+          Value: client-RouteTablePublic
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref clientVPC
+      Tags:
+        - Key: Name
+          Value: client-RouteTablePrivate
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientRTIGEntry:
+    Type: AWS::EC2::Route
+    DependsOn: clientAttachIG
+    Properties:
+      RouteTableId: !Ref clientRTExternal
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref clientIG 
+
+  clientFE:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref clientVPC
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', A], !FindInMap [SNEnv, !Ref Env, frontend]]
+      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', A]
+      Tags:
+        - Key: Name
+          Value: client-Public-A
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientApp:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref clientVPC
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', B], !FindInMap [SNEnv, !Ref Env, app]]
+      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', B]
+      Tags:
+        - Key: Name
+          Value: client-Private-B
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientDB:
+    Type: AWS::EC2::Subnet
+    Condition: IsNotSB
+    Properties:
+      VpcId: !Ref clientVPC
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', C], !FindInMap [SNEnv, !Ref Env, db]]
+      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', C]
+      Tags:
+        - Key: Name
+          Value: client-Private-C
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientExtAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref clientRTExternal
+      SubnetId: !Ref clientFE
+
+  clientAppAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref clientRT
+      SubnetId: !Ref clientApp
+
+  clientDBAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref clientRT
+      SubnetId: !Ref clientDB
+
+Outputs:
+  clientVPCID:
+    Description: VPC ID
+    Value: !Ref clientVPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCID"
+  clientVPCSG:
+    Description: Default Security Group
+    Value: !Ref clientVPCSG
+    Export:
+      Name: !Sub "${AWS::StackName}-SG"
+  clientFE:
+    Description: External Subnet
+    Value: !Ref clientFE
+    Export:
+      Name: !Sub "${AWS::StackName}-FE"
+  clientApp:
+    Description: Application Subnet
+    Value: !Ref clientApp
+    Export:
+      Name: !Sub "${AWS::StackName}-APP"
+  clientDB:
+    Description: Database Subnet
+    Value: !Ref clientDB
+    Export:
+      Name: !Sub "${AWS::StackName}-DB"

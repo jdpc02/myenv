@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ALB with ASG Security Groups Stack
+Parameters:
+  Env:
+    Type: String
+  ContactInfo:
+    Type: String
+  ContactEmail:
+    Type: String
+  VPCInfo:
+    Type: String
+  ThisRegion:
+    Type: String
+
+Resources:
+  ALBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALB Security Group
+      VpcId: !Ref VPCInfo
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: '80'
+          ToPort: '80'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          FromPort: '0'
+          ToPort: '65535'
+      Tags:
+        - Key: Name
+          Value: client-ALBSG
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  ASGSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ASG Security Group
+      VpcId: !Ref VPCInfo
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          SourceSecurityGroupId: !Ref ALBSG
+          FromPort: '80'
+          ToPort: '80'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          FromPort: '0'
+          ToPort: '65535'
+      Tags:
+        - Key: Name
+          Value: client-ASGSG
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+Outputs:
+  ALBSG:
+    Description: ALB Security Group
+    Value: !Ref ALBSG
+    Export:
+      Name: !Join
+      - '-'
+      - -  !Ref ThisRegion
+        -  !Ref Env
+        - 'ALBSG'
+  ASGSG:
+    Description: ASG Security Group
+    Value: !Ref ASGSG
+    Export:
+      Name: !Join
+      - '-'
+      - -  !Ref ThisRegion
+        -  !Ref Env
+        - 'ASGSG'

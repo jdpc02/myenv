@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ALB with ASG Parent Stack
+Parameters:
+  Env:
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - prod
+      - nonprod
+      - sandbox
+    Description: 'Deployment Environment'
+
+  ContactInfo:
+    Typ: String
+    Default: 'Client Group'
+    Description: 'Contact for Client'
+
+  ContactEmail:
+    Typ: String
+    Default: 'clientgroup@company.info'
+    Description: 'Contact email for Client'
+
+  ClientKey:
+    Type: AWS::EC2::KeyPair::KeyName
+
+  AmzIntance:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+    Description: 'Server Instance'
+
+  MinFS:
+    Type: Number
+    Default: 1
+    AllowedValues:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+    Description: 'Minimum ASG fleet size'
+
+  MaxFS:
+    Type: Number
+    Default: 1
+    AllowedValues:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+    Description: 'Maximum ASG fleet size'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Client Setup
+      Parameters:
+      - Env
+      - ClientKey
+      - AmzInstance
+      - MinFS
+      - MaxFS
+    - Label:
+        default: Tags
+      Parameters:
+      - ContactInfo
+      - ContactEmail
+    ParameterLabels:
+      Env:
+        default: VPC Application Environment
+      AmzIntance:
+        default: Server Type for your fleet
+      MinFS:
+        default: Set the minimum number of web servers for this stack
+      MaxFS:
+        default: Set the maximum number of web servers for this stack
+      ContactInfo:
+        default: Contact group or person responsible for the VPC
+      ContactEmail:
+        default: Contact email
+
+Mappings:
+  MapRegion:
+    us-east-1:
+      Name: UE1
+    us-west-2:
+      Name: UW2
+
+Resources:
+  ClientIAM:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Env: !Ref Env
+      ContactInfo: !Ref ContactInfo
+      ContactEmail: !Ref ContactEmail
+      ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+    TemplateURL: !Sub
+    - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/iam.yaml'
+    - mapregion:
+        !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      theenv:
+        !Ref Env
+    TimeoutInMinutes: 15
+
+  ClientSG:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: ClientIAM
+    Properties:
+      Env: !Ref Env
+      ContactInfo: !Ref ContactInfo
+      ContactEmail: !Ref ContactEmail
+      VPCInfo:
+        Fn::ImportValue: !Sub
+        - '${mapregion}-VPC-VPCID'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
+      ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+    TemplateURL: !Sub
+    - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/sg.yaml'
+    - mapregion:
+        !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      theenv:
+        !Ref Env
+    TimeoutInMinutes: 15
+
+  ClientFleet:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: ClientSG
+    Properties:
+      Env: !Ref Env
+      ContactInfo: !Ref ContactInfo
+      ContactEmail: !Ref ContactEmail
+      ClientKey: !Ref ClientKey
+      AmzInstance: !Ref AmzInstance
+      MinFS: !Ref MinFS
+      MaxFS: !Ref MaxFS
+      VPCInfo:
+        Fn::ImportValue: !Sub
+        - '${mapregion}-VPC-VPCID'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
+      ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      InstanceProfile: !GetAtt ClientIAM.Outputs.InstanceProfile
+      ALBSG: !GetAtt ClientSG.Outputs.ALBSG
+      ASGSG: !GetAtt ClientSG.Outputs.ASGSG
+    TemplateURL: !Sub
+    - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/fleet.yaml'
+    - mapregion:
+        !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      theenv:
+        !Ref Env
+    TimeoutInMinutes: 30
+
+# Outputs:

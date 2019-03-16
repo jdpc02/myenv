@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ALB with ASG Fleet Stack
+Parameters:
+  Env:
+    Type: String
+  ContactInfo:
+    Type: String
+  ContactEmail:
+    Type: String
+  ClientKey:
+    Type: String
+  AmzInstance:
+    Type: String
+  MinFS:
+    Type: Number
+  MaxFS:
+    Type: Number
+  VPCInfo:
+    Type: String
+  ThisRegion:
+    Type: String
+  InstanceProfile:
+    Type: String
+  ALBSG:
+    Type: String
+  ASGSG:
+    Type: String
+
+Mappings:
+  ThisRegion:
+    us-east-1:
+      Name: ue1
+    us-west-2:
+      Name: uw2
+  ApprovedAMIs:
+    us-east-1:
+      ID: ami-0de53d8956e8dcf80
+    us-west-2:
+      ID: ami-061392db613a6357b
+
+Resources:
+  LaunchCfg:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+
+  FleetASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+
+  FleetScaleUp:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+
+  FleetScaleDown:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+
+  CPUHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+
+  CPULow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+
+  ClientALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+
+  ClientTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+
+  ClientHTTP:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+
+  TestServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref RootDisk
+            VolumeType: gp2
+      ImageId: !FindInMap [ ApprovedAMIs, !Ref "AWS::Region", ID ]
+      InstanceType: "t2.micro"
+      KeyName: !Ref MyKey
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: '0'
+          SubnetId: !Ref MySubnet
+          GroupSet: [ !ImportValue "TCIStack-SG" ]
+      Tags:
+        - Key: Name
+          Value: "TestInstance"
+        - Key: Tool
+          Value: "CFN"
+      UserData:
+        !Base64 |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y httpd
+          sudo service httpd start
+          sudo chkconfig enable httpd
+          sudo su -
+          echo '<html> <body> <h1>hello world</h1></body></html>' > /var/www/html/index.html
