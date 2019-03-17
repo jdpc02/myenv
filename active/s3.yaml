@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: ALB with ASG Parent Stack
+Description: Onica DevOps Test 2.1 S3 Stack
 Parameters:
   Env:
     Type: String
