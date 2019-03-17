@@ -31,9 +31,9 @@ Parameters:
 Mappings:
   MapRegion:
     us-east-1:
-      Name: UE1
+      Name: ue1
     us-west-2:
-      Name: UW2
+      Name: uw2
   ApprovedAMIs:
     us-east-1:
       ID: ami-0de53d8956e8dcf80
@@ -41,11 +41,67 @@ Mappings:
       ID: ami-061392db613a6357b
 
 Resources:
+  BastionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'ec2.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        -
+          PolicyName: !Join
+          - '-'
+          - -  !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+            -  !Ref Env
+            - 'bastion-client-role'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: 'Allow'
+                Action:
+                  - ec2:describe*
+                  - ec2:createtags*
+                  - ec2:DescribeInstanceStatus
+                Resource: '*'
+              -
+                Effect: 'Allow'
+                Action:
+                  - s3:locate*
+                  - s3:list*
+                  - s3:get*
+                Resource: '*'
+              -
+                Effect: 'Allow'
+                Action:
+                  - cloudwatch:get*
+                  - cloudwatch:describe*
+                  - cloudwatch:list*
+                Resource: '*'
+
+  BastionInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DependsOn: BastionRole
+    Properties:
+      Roles:
+        - !Ref BastionRole
+
   BastionSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Bastion Host Security Group
-      VpcId: !Ref VPCInfo
+      VpcId:
+        Fn::ImportValue: !Sub
+        - '${mapregion}-VPC-VPCID'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
       SecurityGroupIngress:
         - IpProtocol: tcp
           CidrIp: !Ref MyIPAddr
@@ -71,6 +127,7 @@ Resources:
   BastionInstance:
     Type: AWS::EC2::Instance
     Properties:
+      IamInstanceProfile: !Ref BastionInstanceProfile
       ImageId: !FindInMap [ ApprovedAMIs, !Ref 'AWS::Region', ID ]
       InstanceType: 't2.micro'
       KeyName: !Ref ClientKey
