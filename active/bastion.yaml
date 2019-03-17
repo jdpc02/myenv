@@ -138,7 +138,8 @@ Resources:
             Fn::ImportValue: !Sub
             - '${mapregion}-VPC-FE2'
             - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
-          GroupSet: !Ref BastionSG
+          GroupSet:
+            - !Ref BastionSG
       Tags:
         - Key: Name
           Value: 'Client Bastion Host'
