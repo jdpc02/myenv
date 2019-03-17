@@ -11,12 +11,12 @@ Parameters:
     Description: 'Deployment Environment'
 
   ContactInfo:
-    Typ: String
+    Type: String
     Default: 'Client Group'
     Description: 'Contact for Client'
 
   ContactEmail:
-    Typ: String
+    Type: String
     Default: 'clientgroup@company.info'
     Description: 'Contact email for Client'
 

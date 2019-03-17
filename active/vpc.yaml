@@ -11,12 +11,12 @@ Parameters:
     Description: 'Deployment Environment'
 
   ContactInfo:
-    Typ: String
+    Type: String
     Default: 'VPC Group'
     Description: 'Contact for VPC'
 
   ContactEmail:
-    Typ: String
+    Type: String
     Default: 'vpcgroup@company.info'
     Description: 'Contact email for VPC'
 

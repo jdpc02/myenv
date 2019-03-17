@@ -11,12 +11,12 @@ Parameters:
     Description: 'Deployment Environment'
 
   ContactInfo:
-    Typ: String
+    Type: String
     Default: 'Client Group'
     Description: 'Contact for Client'
 
   ContactEmail:
-    Typ: String
+    Type: String
     Default: 'clientgroup@company.info'
     Description: 'Contact email for Client'
 
@@ -27,7 +27,7 @@ Mappings:
     us-west-2:
       Name: UW2
 
-Resource:
+Resources:
   ClientS3:
     Type: AWS::S3::Bucket
     Properties:
