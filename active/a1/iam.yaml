@@ -10,7 +10,7 @@ Parameters:
   ThisRegion:
     Type: String
 
-Resource:
+Resources:
   AssumeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -27,11 +27,7 @@ Resource:
       Path: '/'
       Policies:
         -
-          PolicyName: !Join
-          - '-'
-          - -  !Ref ThisRegion
-            -  !Ref Env
-            - 'client-role'
+          PolicyName: !Join ['-', [!Ref ThisRegion, !Ref Env, 'client-role']]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:

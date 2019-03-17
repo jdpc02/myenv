@@ -26,9 +26,9 @@ Parameters:
   ASGSG:
     Type: String
   HighCPUAlarm:
-    Type: Double
+    Type: Number
   LowCPUAlarm:
-    Type: Double
+    Type: Number
 
 Mappings:
   ApprovedAMIs:
@@ -51,10 +51,7 @@ Resources:
           - mapregion:
               !Ref ThisRegion
         - Key: access_logs.s3.prefix
-          Value: !Join
-          - '/'
-          - -  !Ref Env
-            -  !Ref ThisRegion
+          Value: !Join ['/', [!Ref Env, !Ref ThisRegion]]
       Scheme: internet-facing
       SecurityGroups:
         - !Ref ALBSG
@@ -89,11 +86,7 @@ Resources:
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: 200-308
-      Name: !Join
-      - '-'
-      - -  !Ref ThisRegion
-        -  !Ref Env
-        - 'tg'
+      Name: !Join ['-', [!Ref ThisRegion, !Ref Env, 'tg']]
       Port: 80
       Protocol: HTTP
       TargetType: instance 
@@ -133,11 +126,7 @@ Resources:
       ImageId: !FindInMap [ ApprovedAMIs, !Ref 'AWS::Region', ID ]
       InstanceType: !Ref AmzInstance
       KeyName: !Ref ClientKey
-      LaunchConfigurationName: !Join
-      - '-'
-      - -  !Ref ThisRegion
-        -  !Ref Env
-        - 'launchcfg'
+      LaunchConfigurationName: !Join ['-', [!Ref ThisRegion, !Ref Env, 'launchcfg']]
       SecurityGroups:
         - !Ref ASGSG
       UserData:
@@ -243,11 +232,7 @@ Resources:
   FleetASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      AutoScalingGroupName: !Join
-      - '-'
-      - -  !Ref ThisRegion
-        -  !Ref Env
-        - 'ASG'
+      AutoScalingGroupName: !Join ['-', [!Ref ThisRegion, !Ref Env, 'asg']]
       AvailabilityZones:
         - Fn::ImportValue: !Sub
           - '${mapregion}-VPC-FE1'
@@ -297,11 +282,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmActions: !Ref FleetScaleUp
-      AlarmDescription: !Join
-      - ''
-      - -  'Adding Instances if CPU utilization is greater than '
-        -  !Ref HighCPUAlarm
-        - ' for 5 minutes '
+      AlarmDescription: !Join ['', ['Adding Instances if CPU utilization is greater than ', !Ref HighCPUAlarm, ' for 5 minutes']]
       ComparisonOperator: GreaterThanThreshold
       Dimentions:
         - Name: AutoScalingGroupName
@@ -317,11 +298,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmActions: !Ref FleetScaleDown
-      AlarmDescription: !Join
-      - ''
-      - -  'Removing Instances if CPU utilization is less than '
-        -  !Ref HighCPUAlarm
-        - ' for 5 minutes '
+      AlarmDescription: !Join ['', ['Removing Instances if CPU utilization is less than ', !Ref LowCPUAlarm, ' for 5 minutes']]
       ComparisonOperator: LessThanThreshold
       Dimentions:
         - Name: AutoScalingGroupName
@@ -332,3 +309,10 @@ Resources:
       Period: '300'
       Statistic: Average
       Threshold: !Ref LowCPUAlarm
+
+Outputs:
+  ALBDNS:
+    Description: URL to use for fleet
+    Value: !GetAtt ClientALB.DNSName
+    Export:
+      Name: !Sub "${AWS::StackName}-ALBDNS"
