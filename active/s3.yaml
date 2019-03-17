@@ -51,3 +51,32 @@ Resources:
           Value: !Ref Env
         - Key: Tool
           Value: CFN
+
+  BucketPol:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ClientS3
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - s3:Put*
+              - s3:Get*
+              - s3:List*
+            Principal:
+              AWS: !Ref AWS::AccountId
+            Resource:
+              - !GetAtt ClientS3.Arn
+              - !Join ['', [!GetAtt ClientS3.Arn, '/*']]
+          -
+            Action: 's3:*'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !GetAtt ClientS3.Arn
+              - !Join ['', [!GetAtt ClientS3.Arn, '/*']]
+            Condition:
+              Bool:
+                aws:SecureTransport: false
