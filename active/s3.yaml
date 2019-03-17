@@ -23,9 +23,9 @@ Parameters:
 Mappings:
   MapRegion:
     us-east-1:
-      Name: UE1
+      Name: ue1
     us-west-2:
-      Name: UW2
+      Name: uw2
 
 Resources:
   ClientS3:

@@ -114,9 +114,6 @@ Mappings:
       dbnonprod: 172.30.76.0/22
       dbsb: 172.30.140.0/22
 
-Conditions:
-  IsNotSB: !Not [ !Equals [!Ref Env, 'sandbox'] ]
-
 Resources:
   clientVPC:
     Type: AWS::EC2::VPC
@@ -202,8 +199,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', A], !FindInMap [SNEnv, !Ref Env, frontend1]]
-      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', A]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, !Ref 'AWS::Region', A], !FindInMap [SNEnv, !Ref Env, frontend1]]
+      AvailabilityZone: !FindInMap [AZRegions, !Ref 'AWS::Region', A]
       MapPublicIpOnLaunch: True
       Tags:
         - Key: Name
@@ -221,8 +218,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', B], !FindInMap [SNEnv, !Ref Env, frontend2]]
-      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', B]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, !Ref 'AWS::Region', B], !FindInMap [SNEnv, !Ref Env, frontend2]]
+      AvailabilityZone: !FindInMap [AZRegions, !Ref 'AWS::Region', B]
       MapPublicIpOnLaunch: True
       Tags:
         - Key: Name
@@ -240,8 +237,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', C], !FindInMap [SNEnv, !Ref Env, app]]
-      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', C]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, !Ref 'AWS::Region', C], !FindInMap [SNEnv, !Ref Env, app]]
+      AvailabilityZone: !FindInMap [AZRegions, !Ref 'AWS::Region', C]
       Tags:
         - Key: Name
           Value: client-App
@@ -256,11 +253,10 @@ Resources:
 
   clientDB:
     Type: AWS::EC2::Subnet
-    Condition: IsNotSB
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', D], !FindInMap [SNEnv, !Ref Env, db]]
-      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', D]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, !Ref 'AWS::Region', D], !FindInMap [SNEnv, !Ref Env, db]]
+      AvailabilityZone: !FindInMap [AZRegions, !Ref 'AWS::Region', D]
       Tags:
         - Key: Name
           Value: client-DB
@@ -303,19 +299,14 @@ Outputs:
     Value: !Ref clientVPC
     Export:
       Name: !Sub "${AWS::StackName}-VPCID"
-  clientVPCSG:
-    Description: Default Security Group
-    Value: !Ref clientVPCSG
-    Export:
-      Name: !Sub "${AWS::StackName}-SG"
   clientFE1:
     Description: External Subnet 1
-    Value: !Ref clientFE
+    Value: !Ref clientFE1
     Export:
       Name: !Sub "${AWS::StackName}-FE1"
-  clientFE1:
+  clientFE2:
     Description: External Subnet 2
-    Value: !Ref clientFE
+    Value: !Ref clientFE2
     Export:
       Name: !Sub "${AWS::StackName}-FE2"
   clientApp:
@@ -323,3 +314,8 @@ Outputs:
     Value: !Ref clientApp
     Export:
       Name: !Sub "${AWS::StackName}-APP"
+  clientDB:
+    Description: Database Subnet
+    Value: !Ref clientDB
+    Export:
+      Name: !Sub "${AWS::StackName}-DB"
