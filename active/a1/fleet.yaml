@@ -12,9 +12,9 @@ Parameters:
   AmzInstance:
     Type: String
   MinFS:
-    Type: Number
+    Type: String
   MaxFS:
-    Type: Number
+    Type: String
   VPCInfo:
     Type: String
   ThisRegion:
@@ -25,13 +25,12 @@ Parameters:
     Type: String
   ASGSG:
     Type: String
+  HighCPUAlarm:
+    Type: Double
+  LowCPUAlarm:
+    Type: Double
 
 Mappings:
-  ThisRegion:
-    us-east-1:
-      Name: ue1
-    us-west-2:
-      Name: uw2
   ApprovedAMIs:
     us-east-1:
       ID: ami-0de53d8956e8dcf80
@@ -39,69 +38,297 @@ Mappings:
       ID: ami-061392db613a6357b
 
 Resources:
-  LaunchCfg:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-
-  FleetASG:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-
-  FleetScaleUp:
-    Type: AWS::AutoScaling::ScalingPolicy
-    Properties:
-
-  FleetScaleDown:
-    Type: AWS::AutoScaling::ScalingPolicy
-    Properties:
-
-  CPUHigh:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-
-  CPULow:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-
   ClientALB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
+      IpAddressType: ipv4
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub
+          - 'https://s3.amazonaws.com/client-s3-${mapregion}/logs/ALB'
+          - mapregion:
+              !Ref ThisRegion
+        - Key: access_logs.s3.prefix
+          Value: !Join
+          - '/'
+          - -  !Ref Env
+            -  !Ref ThisRegion
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref ALBSG
+      Subnets:
+        - Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-FE1'
+          - { mapregion: !Ref ThisRegion }
+        - Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-FE2'
+          - { mapregion: !Ref ThisRegion }
+      Type: application
+      Tags:
+        - Key: Name
+          Value: client-FleetALB
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
 
   ClientTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: '80'
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: 200-308
+      Name: !Join
+      - '-'
+      - -  !Ref ThisRegion
+        -  !Ref Env
+        - 'tg'
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance 
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-VPCID'
+          - { mapregion: !Ref ThisRegion }
+      Tags:
+        - Key: Name
+          Value: client-FleetALB
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
 
   ClientHTTP:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: ClientTG
     Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ClientTG
+      LoadBalancerArn: !Ref ClientALB
+      Port: '80'
+      Protocol: HTTP
 
-  TestServer:
-    Type: AWS::EC2::Instance
+  LaunchCfg:
+    Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: !Ref RootDisk
-            VolumeType: gp2
-      ImageId: !FindInMap [ ApprovedAMIs, !Ref "AWS::Region", ID ]
-      InstanceType: "t2.micro"
-      KeyName: !Ref MyKey
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: true
-          DeviceIndex: '0'
-          SubnetId: !Ref MySubnet
-          GroupSet: [ !ImportValue "TCIStack-SG" ]
-      Tags:
-        - Key: Name
-          Value: "TestInstance"
-        - Key: Tool
-          Value: "CFN"
+      AssociatePublicIpAddress: True
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !FindInMap [ ApprovedAMIs, !Ref 'AWS::Region', ID ]
+      InstanceType: !Ref AmzInstance
+      KeyName: !Ref ClientKey
+      LaunchConfigurationName: !Join
+      - '-'
+      - -  !Ref ThisRegion
+        -  !Ref Env
+        - 'launchcfg'
+      SecurityGroups:
+        - !Ref ASGSG
       UserData:
         !Base64 |
-          #!/bin/bash
+          #!/bin/bash -x
           sudo yum update -y
-          sudo yum install -y httpd
-          sudo service httpd start
-          sudo chkconfig enable httpd
-          sudo su -
-          echo '<html> <body> <h1>hello world</h1></body></html>' > /var/www/html/index.html
+          /opt/aws/bin/cfg-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets bootset --region ${AWS::Region}
+          bootsetstatus=`echo $?`
+          mv /var/log/cfn-init.log /var/log/cfn-init-bootset.log
+          mv /var/log/cfn-init-cmd.log /var/log/cfn-init-cmd-bootset.log
+          /opt/aws/bin/cfg-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets appset --region ${AWS::Region}
+          appsetstatus=`echo $?`
+          mv /var/log/cfn-init.log /var/log/cfn-init-appset.log
+          mv /var/log/cfn-init-cmd.log /var/log/cfn-init-cmd-appset.log
+          if [ $bootsetstatus -eq 0 -a $appsetstatus -eq 0 ]
+          then
+            /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource LaunchCfg --region ${AWS::Region}
+          else
+            /opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource LaunchCfg --region ${AWS::Region}
+          fi
+          idforinstance=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          appset:
+            - cfgcloudf
+          bootset:
+            - bootsystem
+        cfgcloudf:
+          files:
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post-update
+                path=Resources.Server.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets appset --region ${AWS::Region}
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackName}
+                region=${AWS::Region}
+                verbose=trie
+                interval=5
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - '/etc/cfn/hooks.d/cfn-auto-reloader.conf'
+                  - '/etc/cfn/cfn-hup.conf'
+        bootsystem:
+          packages:
+            rpm:
+              chef-client: 'https://packages.chef.io/files/stable/chef/14.11.21/el/7/chef-14.11.21-1.el7.x86_64.rpm'
+          files:
+            /tmp/env:
+              content:
+                !Ref Env
+            /tmp/tg:
+              content:
+                !Ref ClientTG
+            /tmp/myregion:
+              content:
+                ${AWS::Region}
+            /tmp/mapregion:
+              content:
+                !Ref ThisRegion
+            /tmp/addtoTG.sh:
+              content:
+                TGREGION=$(cat /tmp/myregion)
+                TG=$(cat /tmp/tg)
+                for MYTARGET in $TG; do
+                  if [ "$MYTARGET" != "none" ]
+                  then
+                    INSTID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
+                    aws elbv2 register-targets --target-group-arn ${MYTARGET} --targets Id=${INSTID} --region ${TGREGION}
+                  fi
+                done
+              mode: '000755'
+              owner: 'root'
+              group: 'root'
+          commands:
+            01_grab_files:
+              command: !Sub |
+                mapregion=`cat /tmp/mapregion`
+                mkdir /opt/fleetbootstrap
+                aws s3 sync https://s3.amazonaws.com/client-s3-$mapregion/bootstrap/ /opt/fleetbootstrap/
+            02_run_chef_script:
+              command: !Sub |
+                cd /opt/fleetbootstrap/cookbooks
+                chef-client --local-mode -o setupweb
+            03_add_to_TG:
+              command: !Sub |
+                /tmp/addtoTG.sh
+
+  FleetASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: !Join
+      - '-'
+      - -  !Ref ThisRegion
+        -  !Ref Env
+        - 'ASG'
+      AvailabilityZones:
+        - Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-FE1'
+          - { mapregion: !Ref ThisRegion }
+        - Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-FE2'
+          - { mapregion: !Ref ThisRegion }
+      DesiredCapacity: !Ref MinFS
+      HealthCheckGracePeriod: 1200
+      HealthCheckType: ELB
+      LaunchConfigurationName: !Ref LaunchCfg
+      LoadBalancerNames:
+        - !Ref ClientALB
+      MaxSize: !Ref MaxFS
+      MinSize: !Ref MinFS
+      TerminationPolicies:
+        - OldestInstance
+      Tags:
+        - Key: Name
+          Value: client-FleetASG
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  FleetScaleUp:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref FleetASG
+      Cooldown: '300'
+      ScalingAdjustment: '1'
+
+  FleetScaleDown:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref FleetASG
+      Cooldown: '300'
+      ScalingAdjustment: '-1'
+
+  CPUHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions: !Ref FleetScaleUp
+      AlarmDescription: !Join
+      - ''
+      - -  'Adding Instances if CPU utilization is greater than '
+        -  !Ref HighCPUAlarm
+        - ' for 5 minutes '
+      ComparisonOperator: GreaterThanThreshold
+      Dimentions:
+        - Name: AutoScalingGroupName
+          Value: !Ref FleetASG
+      EvaluationPeriods: '1'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: !Ref HighCPUAlarm
+
+  CPULow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions: !Ref FleetScaleDown
+      AlarmDescription: !Join
+      - ''
+      - -  'Removing Instances if CPU utilization is less than '
+        -  !Ref HighCPUAlarm
+        - ' for 5 minutes '
+      ComparisonOperator: LessThanThreshold
+      Dimentions:
+        - Name: AutoScalingGroupName
+          Value: !Ref FleetASG
+      EvaluationPeriods: '1'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: !Ref LowCPUAlarm

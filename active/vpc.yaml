@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Onica DevOps Test 2.1
+Description: Onica DevOps Test 2.1 VPC Stack
 Parameters:
   Env:
     Type: String
@@ -46,10 +46,12 @@ Mappings:
       A: us-east-1a
       B: us-east-1b
       C: us-east-1c
+      D: us-east-1d
     us-west-2:
       A: us-west-2a
       B: us-west-2b
       C: us-west-2c
+      D: us-west-2d
 
   CIDRRegions:
     us-east-1:
@@ -63,79 +65,54 @@ Mappings:
 
   SNEnv:
     prod:
-      frontend: feprod
+      frontend1: fe1prod
+      frontend2: fe2prod
       app: appprod
       db: dbprod
     nonprod:
-      frontend: fenonprod
+      frontend1: fe1nonprod
+      frontend2: fe2nonprod
       app: appnonprod
       db: dbnonprod
     sandbox:
-      frontend: fesb
+      frontend1: fe1sb
+      frontend2: fe2sb
       app: appsb
       db: dbsb
 
   SNCIDR:
     us-east-1a:
-      feprod: 10.30.0.0/22
-      appprod: 10.30.4.0/22
-      dbprod: 10.30.8.0/22
-      fenonprod: 10.30.64.0/22
-      appnonprod: 10.30.68.0/22
-      dbnonprod: 10.30.72.0/22
-      fesb: 10.30.128.0/22
-      appsb: 10.30.132.0/22
-      dbsb: 10.30.136.0/22
+      fe1prod: 10.30.0.0/22
+      fe1nonprod: 10.30.64.0/22
+      fe1sb: 10.30.128.0/22
     us-east-1b:
-      feprod: 10.30.12.0/22
-      appprod: 10.30.16.0/22
-      dbprod: 10.30.20.0/22
-      fenonprod: 10.30.76.0/22
-      appnonprod: 10.30.80.0/22
-      dbnonprod: 10.30.84.0/22
-      fesb: 10.30.140.0/22
-      appsb: 10.30.144.0/22
-      dbsb: 10.30.148.0/22
+      fe2prod: 10.34.4.0/22
+      fe2nonprod: 10.30.68.0/22
+      fe2sb: 10.30.132.0/22
     us-east-1c:
-      feprod: 10.30.24.0/22
-      appprod: 10.30.28.0/22
-      dbprod: 10.30.32.0/22
-      fenonprod: 10.30.88.0/22
-      appnonprod: 10.30.92.0/22
-      dbnonprod: 10.30.96.0/22
-      fesb: 10.30.152.0/22
-      appsb: 10.30.156.0/22
-      dbsb: 10.30.160.0/22
+      appprod: 10.38.8.0/22
+      appnonprod: 10.30.72.0/22
+      appsb: 10.30.136.0/22
+    us-east-1d:
+      dbprod: 10.30.12.0/22
+      dbnonprod: 10.30.76.0/22
+      dbsb: 10.30.140.0/22
     us-west-1a:
-      feprod: 172.30.0.0/22
-      appprod: 172.30.4.0/22
-      dbprod: 172.30.8.0/22
-      fenonprod: 172.30.64.0/22
-      appnonprod: 172.30.68.0/22
-      dbnonprod: 172.30.72.0/22
-      fesb: 172.30.128.0/22
-      appsb: 172.30.132.0/22
-      dbsb: 172.30.136.0/22
-    us-east-1b:
-      feprod: 172.30.12.0/22
-      appprod: 172.30.16.0/22
-      dbprod: 172.30.20.0/22
-      fenonprod: 172.30.76.0/22
-      appnonprod: 172.30.80.0/22
-      dbnonprod: 172.30.84.0/22
-      fesb: 172.30.140.0/22
-      appsb: 172.30.144.0/22
-      dbsb: 172.30.148.0/22
-    us-east-1c:
-      feprod: 172.30.24.0/22
-      appprod: 172.30.28.0/22
-      dbprod: 172.30.32.0/22
-      fenonprod: 172.30.88.0/22
-      appnonprod: 172.30.92.0/22
-      dbnonprod: 172.30.96.0/22
-      fesb: 172.30.152.0/22
-      appsb: 172.30.156.0/22
-      dbsb: 172.30.160.0/22
+      fe1prod: 172.30.0.0/22
+      fe1nonprod: 172.30.64.0/22
+      fe1sb: 172.30.128.0/22
+    us-west-1b:
+      fe2prod: 10.34.4.0/22
+      fe2nonprod: 172.30.68.0/22
+      fe2sb: 172.30.132.0/22
+    us-west-1c:
+      appprod: 10.38.8.0/22
+      appnonprod: 172.30.72.0/22
+      appsb: 172.30.136.0/22
+    us-west-1d:
+      dbprod: 172.30.12.0/22
+      dbnonprod: 172.30.76.0/22
+      dbsb: 172.30.140.0/22
 
 Conditions:
   IsNotSB: !Not [ !Equals [!Ref Env, 'sandbox'] ]
@@ -221,15 +198,35 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref clientIG 
 
-  clientFE:
+  clientFE1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', A], !FindInMap [SNEnv, !Ref Env, frontend]]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', A], !FindInMap [SNEnv, !Ref Env, frontend1]]
       AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', A]
+      MapPublicIpOnLaunch: True
       Tags:
         - Key: Name
-          Value: client-Public-A
+          Value: client-External1
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN
+
+  clientFE2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref clientVPC
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', B], !FindInMap [SNEnv, !Ref Env, frontend2]]
+      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', B]
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: Name
+          Value: client-External2
         - Key: ContactInfo
           Value: !Ref ContactInfo
         - Key: ContactEmail
@@ -243,11 +240,11 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', B], !FindInMap [SNEnv, !Ref Env, app]]
-      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', B]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', C], !FindInMap [SNEnv, !Ref Env, app]]
+      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', C]
       Tags:
         - Key: Name
-          Value: client-Private-B
+          Value: client-App
         - Key: ContactInfo
           Value: !Ref ContactInfo
         - Key: ContactEmail
@@ -262,11 +259,11 @@ Resources:
     Condition: IsNotSB
     Properties:
       VpcId: !Ref clientVPC
-      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', C], !FindInMap [SNEnv, !Ref Env, db]]
-      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', C]
+      CidrBlock: !FindInMap [SNCIDR, !FindInMap [AZRegions, 'AWS::Region', D], !FindInMap [SNEnv, !Ref Env, db]]
+      AvailabilityZone: !FindInMap [AZRegions, 'AWS::Region', D]
       Tags:
         - Key: Name
-          Value: client-Private-C
+          Value: client-DB
         - Key: ContactInfo
           Value: !Ref ContactInfo
         - Key: ContactEmail
@@ -276,11 +273,17 @@ Resources:
         - Key: Tool
           Value: CFN
 
-  clientExtAssoc:
+  clientExt1Assoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref clientRTExternal
-      SubnetId: !Ref clientFE
+      SubnetId: !Ref clientFE1
+
+  clientExt2Assoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref clientRTExternal
+      SubnetId: !Ref clientFE2
 
   clientAppAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -305,18 +308,18 @@ Outputs:
     Value: !Ref clientVPCSG
     Export:
       Name: !Sub "${AWS::StackName}-SG"
-  clientFE:
-    Description: External Subnet
+  clientFE1:
+    Description: External Subnet 1
     Value: !Ref clientFE
     Export:
-      Name: !Sub "${AWS::StackName}-FE"
+      Name: !Sub "${AWS::StackName}-FE1"
+  clientFE1:
+    Description: External Subnet 2
+    Value: !Ref clientFE
+    Export:
+      Name: !Sub "${AWS::StackName}-FE2"
   clientApp:
     Description: Application Subnet
     Value: !Ref clientApp
     Export:
       Name: !Sub "${AWS::StackName}-APP"
-  clientDB:
-    Description: Database Subnet
-    Value: !Ref clientDB
-    Export:
-      Name: !Sub "${AWS::StackName}-DB"

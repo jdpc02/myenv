@@ -9,7 +9,7 @@ Parameters:
     Type: String
   VPCInfo:
     Type: String
-  ThisRegion:
+  BastionSG:
     Type: String
 
 Resources:
@@ -50,6 +50,10 @@ Resources:
           SourceSecurityGroupId: !Ref ALBSG
           FromPort: '80'
           ToPort: '80'
+        - IpProtocol: tcp
+          SourceSecurityGroupId: !Ref BastionSG
+          FromPort: '22'
+          ToPort: '22'
       SecurityGroupEgress:
         - IpProtocol: '-1'
           CidrIp: 0.0.0.0/0
@@ -71,18 +75,6 @@ Outputs:
   ALBSG:
     Description: ALB Security Group
     Value: !Ref ALBSG
-    Export:
-      Name: !Join
-      - '-'
-      - -  !Ref ThisRegion
-        -  !Ref Env
-        - 'ALBSG'
   ASGSG:
     Description: ASG Security Group
     Value: !Ref ASGSG
-    Export:
-      Name: !Join
-      - '-'
-      - -  !Ref ThisRegion
-        -  !Ref Env
-        - 'ASGSG'

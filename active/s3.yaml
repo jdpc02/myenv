@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ALB with ASG Parent Stack
+Parameters:
+  Env:
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - prod
+      - nonprod
+      - sandbox
+    Description: 'Deployment Environment'
+
+  ContactInfo:
+    Typ: String
+    Default: 'Client Group'
+    Description: 'Contact for Client'
+
+  ContactEmail:
+    Typ: String
+    Default: 'clientgroup@company.info'
+    Description: 'Contact email for Client'
+
+Mappings:
+  MapRegion:
+    us-east-1:
+      Name: UE1
+    us-west-2:
+      Name: UW2
+
+Resource:
+  ClientS3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+      - '-'
+      - -  'client-s3'
+        -  !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: client-s3
+        - Key: ContactInfo
+          Value: !Ref ContactInfo
+        - Key: ContactEmail
+          Value: !Ref ContactEmail
+        - Key: Environment
+          Value: !Ref Env
+        - Key: Tool
+          Value: CFN

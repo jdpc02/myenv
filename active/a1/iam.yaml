@@ -49,6 +49,13 @@ Resource:
                   - s3:list*
                   - s3:get*
                 Resource: '*'
+              -
+                Effect: 'Allow'
+                Action:
+                  - cloudwatch:get*
+                  - cloudwatch:describe*
+                  - cloudwatch:list*
+                Resource: '*'
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -61,9 +68,3 @@ Outputs:
   InstanceProfile:
     Description: IAM Instance Profile for ALB with ASG
     Value: !GetAtt InstanceProfile.Arn
-    Export:
-      Name: !Join
-      - '-'
-      - -  !Ref ThisRegion
-        -  !Ref Env
-        - 'instprof'

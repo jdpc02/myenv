@@ -39,31 +39,53 @@ Parameters:
     Description: 'Server Instance'
 
   MinFS:
-    Type: Number
-    Default: 1
+    Type: String
+    Default: '1'
     AllowedValues:
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
     Description: 'Minimum ASG fleet size'
 
   MaxFS:
-    Type: Number
-    Default: 1
+    Type: String
+    Default: '1'
     AllowedValues:
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+      - '8'
+      - '9'
+      - '10'
     Description: 'Maximum ASG fleet size'
+
+  HighCPUAlarm:
+    Type: Double
+    Default: '50'
+    AllowedValues:
+      - '50'
+      - '60'
+      - '70'
+      - '80'
+      - '90'
+      - '100'
+    Description: 'High CPU Threshold for Instances'
+
+  LowCPUAlarm:
+    Type: Double
+    Default: '20'
+    AllowedValues:
+      - '10'
+      - '20'
+      - '30'
+      - '40'
+    Description: 'Low CPU Threshold for Instances'
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -76,6 +98,8 @@ Metadata:
       - AmzInstance
       - MinFS
       - MaxFS
+      - HighCPUAlarm
+      - LowCPUAlarm
     - Label:
         default: Tags
       Parameters:
@@ -90,6 +114,10 @@ Metadata:
         default: Set the minimum number of web servers for this stack
       MaxFS:
         default: Set the maximum number of web servers for this stack
+      HighCPUAlarm:
+        default: Define how busy a server is before adding more instances
+      LowCPUAlarm:
+        default: Define how quiet a server is before removing instances
       ContactInfo:
         default: Contact group or person responsible for the VPC
       ContactEmail:
@@ -129,7 +157,10 @@ Resources:
         Fn::ImportValue: !Sub
         - '${mapregion}-VPC-VPCID'
         - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
-      ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      BastionSG:
+        Fn::ImportValue: !Sub
+        - '${mapregion}-Bastion-SG'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
     TemplateURL: !Sub
     - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/sg.yaml'
     - mapregion:
@@ -157,6 +188,8 @@ Resources:
       InstanceProfile: !GetAtt ClientIAM.Outputs.InstanceProfile
       ALBSG: !GetAtt ClientSG.Outputs.ALBSG
       ASGSG: !GetAtt ClientSG.Outputs.ASGSG
+      HighCPUAlarm: !Ref HighCPUAlarm
+      LowCPUAlarm: !Ref LowCPUAlarm
     TemplateURL: !Sub
     - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/fleet.yaml'
     - mapregion:
