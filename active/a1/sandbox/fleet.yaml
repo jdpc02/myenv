@@ -229,23 +229,23 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       AutoScalingGroupName: !Join ['-', [!Ref ThisRegion, !Ref Env, 'asg']]
-      AvailabilityZones:
+      DesiredCapacity: !Ref MinFS
+      HealthCheckGracePeriod: 1200
+      HealthCheckType: ELB
+      LaunchConfigurationName: !Ref LaunchCfg
+      MaxSize: !Ref MaxFS
+      MinSize: !Ref MinFS
+      TargetGroupARNs:
+        - !Ref ClientTG
+      TerminationPolicies:
+        - OldestInstance
+      VPCZoneIdentifier:
         - Fn::ImportValue: !Sub
           - '${mapregion}-VPC-FE1'
           - { mapregion: !Ref ThisRegion }
         - Fn::ImportValue: !Sub
           - '${mapregion}-VPC-FE2'
           - { mapregion: !Ref ThisRegion }
-      DesiredCapacity: !Ref MinFS
-      HealthCheckGracePeriod: 1200
-      HealthCheckType: ELB
-      LaunchConfigurationName: !Ref LaunchCfg
-      LoadBalancerNames:
-        - !Ref ClientALB
-      MaxSize: !Ref MaxFS
-      MinSize: !Ref MinFS
-      TerminationPolicies:
-        - OldestInstance
       Tags:
         - Key: Name
           Value: client-FleetASG
@@ -282,10 +282,11 @@ Resources:
   CPUHigh:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmActions: !Ref FleetScaleUp
+      AlarmActions:
+        - !Ref FleetScaleUp
       AlarmDescription: !Join ['', ['Adding Instances if CPU utilization is greater than ', !Ref HighCPUAlarm, ' for 5 minutes']]
       ComparisonOperator: GreaterThanThreshold
-      Dimentions:
+      Dimensions:
         - Name: AutoScalingGroupName
           Value: !Ref FleetASG
       EvaluationPeriods: '1'
@@ -298,10 +299,11 @@ Resources:
   CPULow:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmActions: !Ref FleetScaleDown
+      AlarmActions:
+        - !Ref FleetScaleDown
       AlarmDescription: !Join ['', ['Removing Instances if CPU utilization is less than ', !Ref LowCPUAlarm, ' for 5 minutes']]
       ComparisonOperator: LessThanThreshold
-      Dimentions:
+      Dimensions:
         - Name: AutoScalingGroupName
           Value: !Ref FleetASG
       EvaluationPeriods: '1'
