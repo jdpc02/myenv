@@ -126,14 +126,14 @@ Resources:
       SecurityGroups:
         - !Ref ASGSG
       UserData:
-        !Base64 |
-          #!/bin/bash -x
+        "Fn::Base64": !Sub |
+          #!/bin/bash -xe
           sudo yum update -y
-          /opt/aws/bin/cfg-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets bootset --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets bootset --region ${AWS::Region}
           bootsetstatus=`echo $?`
           mv /var/log/cfn-init.log /var/log/cfn-init-bootset.log
           mv /var/log/cfn-init-cmd.log /var/log/cfn-init-cmd-bootset.log
-          /opt/aws/bin/cfg-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets appset --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchCfg --configsets appset --region ${AWS::Region}
           appsetstatus=`echo $?`
           mv /var/log/cfn-init.log /var/log/cfn-init-appset.log
           mv /var/log/cfn-init-cmd.log /var/log/cfn-init-cmd-appset.log
