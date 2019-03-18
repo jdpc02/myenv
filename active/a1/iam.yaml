@@ -3,10 +3,6 @@ Description: ALB with ASG IAM Stack
 Parameters:
   Env:
     Type: String
-  ContactInfo:
-    Type: String
-  ContactEmail:
-    Type: String
   ThisRegion:
     Type: String
 

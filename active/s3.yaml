@@ -26,6 +26,11 @@ Mappings:
       Name: ue1
     us-west-2:
       Name: uw2
+  BPS3:
+    us-east-1:
+      ELBID: 127311923021
+    us-west-2:
+      ELBID: 797873946194
 
 Resources:
   ClientS3:
@@ -59,8 +64,7 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          -
-            Effect: Allow
+          - Effect: Allow
             Action:
               - s3:Put*
               - s3:Get*
@@ -70,9 +74,8 @@ Resources:
             Resource:
               - !GetAtt ClientS3.Arn
               - !Join ['', [!GetAtt ClientS3.Arn, '/*']]
-          -
+          - Effect: Deny
             Action: 's3:*'
-            Effect: Deny
             Principal: '*'
             Resource:
               - !GetAtt ClientS3.Arn
@@ -80,3 +83,9 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: false
+          - Effect: Allow
+            Action: 's3:PutObject'
+            Principal:
+              AWS: !FindInMap [BPS3, !Ref 'AWS::Region', ELBID]
+            Resource:
+              - !Join ['', [!GetAtt ClientS3.Arn, '/', !Ref Env, '/AWSLogs/', !Ref 'AWS::AccountId', '/*']]

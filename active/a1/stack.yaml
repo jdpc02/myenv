@@ -23,7 +23,7 @@ Parameters:
   ClientKey:
     Type: AWS::EC2::KeyPair::KeyName
 
-  AmzIntance:
+  AmzInstance:
     Type: String
     Default: t2.micro
     AllowedValues:
@@ -134,68 +134,57 @@ Resources:
   ClientIAM:
     Type: AWS::CloudFormation::Stack
     Properties:
-      Env: !Ref Env
-      ContactInfo: !Ref ContactInfo
-      ContactEmail: !Ref ContactEmail
-      ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
-    TemplateURL: !Sub
-    - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/iam.yaml'
-    - mapregion:
-        !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
-      theenv:
-        !Ref Env
-    TimeoutInMinutes: 15
+      Parameters:
+        Env: !Ref Env
+        ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+      TemplateURL: !Sub
+        - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/iam.yaml'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name], theenv: !Ref Env }
+      TimeoutInMinutes: 15
 
   ClientSG:
     Type: AWS::CloudFormation::Stack
     DependsOn: ClientIAM
     Properties:
-      Env: !Ref Env
-      ContactInfo: !Ref ContactInfo
-      ContactEmail: !Ref ContactEmail
-      VPCInfo:
-        Fn::ImportValue: !Sub
-        - '${mapregion}-VPC-VPCID'
-        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
-      BastionSG:
-        Fn::ImportValue: !Sub
-        - '${mapregion}-Bastion-SG'
-        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
-    TemplateURL: !Sub
-    - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/sg.yaml'
-    - mapregion:
-        !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
-      theenv:
-        !Ref Env
-    TimeoutInMinutes: 15
+      Parameters:
+        Env: !Ref Env
+        ContactInfo: !Ref ContactInfo
+        ContactEmail: !Ref ContactEmail
+        VPCInfo:
+          Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-VPCID'
+          - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
+        BastionSG: !ImportValue ClientBastion-Bastion-SG
+      TemplateURL: !Sub
+        - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/sg.yaml'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name], theenv: !Ref Env }
+      TimeoutInMinutes: 15
 
   ClientFleet:
     Type: AWS::CloudFormation::Stack
     DependsOn: ClientSG
     Properties:
-      Env: !Ref Env
-      ContactInfo: !Ref ContactInfo
-      ContactEmail: !Ref ContactEmail
-      ClientKey: !Ref ClientKey
-      AmzInstance: !Ref AmzInstance
-      MinFS: !Ref MinFS
-      MaxFS: !Ref MaxFS
-      VPCInfo:
-        Fn::ImportValue: !Sub
-        - '${mapregion}-VPC-VPCID'
-        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
-      ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
-      InstanceProfile: !GetAtt ClientIAM.Outputs.InstanceProfile
-      ALBSG: !GetAtt ClientSG.Outputs.ALBSG
-      ASGSG: !GetAtt ClientSG.Outputs.ASGSG
-      HighCPUAlarm: !Ref HighCPUAlarm
-      LowCPUAlarm: !Ref LowCPUAlarm
-    TemplateURL: !Sub
-    - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/fleet.yaml'
-    - mapregion:
-        !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
-      theenv:
-        !Ref Env
-    TimeoutInMinutes: 30
+      Parameters:
+        Env: !Ref Env
+        ContactInfo: !Ref ContactInfo
+        ContactEmail: !Ref ContactEmail
+        ClientKey: !Ref ClientKey
+        AmzInstance: !Ref AmzInstance
+        MinFS: !Ref MinFS
+        MaxFS: !Ref MaxFS
+        VPCInfo:
+          Fn::ImportValue: !Sub
+          - '${mapregion}-VPC-VPCID'
+          - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name] }
+        ThisRegion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name]
+        InstanceProfile: !GetAtt ClientIAM.Outputs.InstanceProfile
+        ALBSG: !GetAtt ClientSG.Outputs.ALBSG
+        ASGSG: !GetAtt ClientSG.Outputs.ASGSG
+        HighCPUAlarm: !Ref HighCPUAlarm
+        LowCPUAlarm: !Ref LowCPUAlarm
+      TemplateURL: !Sub
+        - 'https://s3.amazonaws.com/client-s3-${mapregion}/${theenv}/fleet.yaml'
+        - { mapregion: !FindInMap [MapRegion, !Ref 'AWS::Region', Name], theenv: !Ref Env }
+      TimeoutInMinutes: 30
 
 # Outputs:

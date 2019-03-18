@@ -46,12 +46,9 @@ Resources:
         - Key: access_logs.s3.enabled
           Value: true
         - Key: access_logs.s3.bucket
-          Value: !Sub
-          - 'https://s3.amazonaws.com/client-s3-${mapregion}/logs/ALB'
-          - mapregion:
-              !Ref ThisRegion
+          Value: !Join ['-', ['client-s3', !Ref ThisRegion]]
         - Key: access_logs.s3.prefix
-          Value: !Join ['/', [!Ref Env, !Ref ThisRegion]]
+          Value: !Ref Env
       Scheme: internet-facing
       SecurityGroups:
         - !Ref ALBSG
@@ -97,7 +94,7 @@ Resources:
           - { mapregion: !Ref ThisRegion }
       Tags:
         - Key: Name
-          Value: client-FleetALB
+          Value: client-FleetTG
         - Key: ContactInfo
           Value: !Ref ContactInfo
         - Key: ContactEmail
@@ -121,7 +118,6 @@ Resources:
   LaunchCfg:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      AssociatePublicIpAddress: True
       IamInstanceProfile: !Ref InstanceProfile
       ImageId: !FindInMap [ ApprovedAMIs, !Ref 'AWS::Region', ID ]
       InstanceType: !Ref AmzInstance
@@ -253,14 +249,19 @@ Resources:
       Tags:
         - Key: Name
           Value: client-FleetASG
+          PropagateAtLaunch: 'true'
         - Key: ContactInfo
           Value: !Ref ContactInfo
+          PropagateAtLaunch: 'true'
         - Key: ContactEmail
           Value: !Ref ContactEmail
+          PropagateAtLaunch: 'true'
         - Key: Environment
           Value: !Ref Env
+          PropagateAtLaunch: 'true'
         - Key: Tool
           Value: CFN
+          PropagateAtLaunch: 'true'
 
   FleetScaleUp:
     Type: AWS::AutoScaling::ScalingPolicy
