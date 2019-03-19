@@ -8,7 +8,7 @@ case node['os']
 when 'linux'
   require 'mixlib/shellout'
   case node['platform_family']
-  when 'rhel'
+  when 'rhel', 'amazon'
     tmpvar = Mixlib::ShellOut.new("systemctl status httpd")
   when 'debian'
     tmpvar = Mixlib::ShellOut.new("systemctl status apache2 | grep running")

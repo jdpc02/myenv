@@ -67,8 +67,11 @@ Parameters:
 
   HighCPUAlarm:
     Type: Number
-    Default: '50'
+    Default: '20'
     AllowedValues:
+      - '20'
+      - '30'
+      - '40'
       - '50'
       - '60'
       - '70'

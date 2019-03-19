@@ -1,0 +1,5 @@
+file_cache_path   '/opt/fleetbootstrap'
+cookbook_path     '/opt/fleetbootstrap/cookbooks'
+chef_server_url   'http://127.0.0.1:8889'
+node_name         'node'
+client_key        'path_to_any_pem_file.pem'

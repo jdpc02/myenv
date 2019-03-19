@@ -23,6 +23,13 @@ when 'linux'
       supports :status => true, :restart => true, :reload => true
       action [ :enable, :start ]
     end
+  when 'amazon'
+    package 'httpd'
+    
+    service 'httpd' do
+      supports :status => true, :restart => true, :reload => true
+      action [ :enable, :start ]
+    end
   when 'debian'
     package 'apache2'
     bash 'enable firewall rules for apache2' do
