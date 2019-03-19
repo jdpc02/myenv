@@ -191,46 +191,22 @@ Resources:
             /tmp/tg:
               content:
                 !Ref ClientTG
-            /tmp/myregion:
-              content:
-                ${AWS::Region}
-            /tmp/mapregion:
-              content:
-                !Ref ThisRegion
-            /tmp/addtoTG.sh:
-              content:
-                TGREGION=$(cat /tmp/myregion)
-                TG=$(cat /tmp/tg)
-                for MYTARGET in $TG; do
-                  if [ "$MYTARGET" != "none" ]
-                  then
-                    INSTID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
-                    aws elbv2 register-targets --target-group-arn ${MYTARGET} --targets Id=${INSTID} --region ${TGREGION}
-                  fi
-                done
-              mode: '000755'
-              owner: 'root'
-              group: 'root'
           commands:
             01_grab_files:
               command: !Sub |
-                mapregion=`cat /tmp/mapregion`
                 mkdir /opt/fleetbootstrap
-                aws s3 sync https://s3.amazonaws.com/client-s3-$mapregion/bootstrap/ /opt/fleetbootstrap/
+                aws s3 sync s3://client-s3-${ThisRegion}/bootstrap/ /opt/fleetbootstrap/
             02_run_chef_script:
               command: !Sub |
                 cd /opt/fleetbootstrap/cookbooks
-                chef-client --local-mode -o setupweb
-            03_add_to_TG:
-              command: !Sub |
-                /tmp/addtoTG.sh
+                chef-client --local-mode -c /opt/fleetbootstrap/knife.rb -o setupweb
 
   FleetASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       AutoScalingGroupName: !Join ['-', [!Ref ThisRegion, !Ref Env, 'asg']]
       DesiredCapacity: !Ref MinFS
-      HealthCheckGracePeriod: 1200
+      HealthCheckGracePeriod: 300
       HealthCheckType: ELB
       LaunchConfigurationName: !Ref LaunchCfg
       MaxSize: !Ref MaxFS
@@ -268,7 +244,7 @@ Resources:
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref FleetASG
-      Cooldown: '300'
+      Cooldown: '60'
       ScalingAdjustment: '1'
 
   FleetScaleDown:
@@ -276,7 +252,7 @@ Resources:
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref FleetASG
-      Cooldown: '300'
+      Cooldown: '60'
       ScalingAdjustment: '-1'
 
   CPUHigh:
@@ -284,7 +260,7 @@ Resources:
     Properties:
       AlarmActions:
         - !Ref FleetScaleUp
-      AlarmDescription: !Join ['', ['Adding Instances if CPU utilization is greater than ', !Ref HighCPUAlarm, ' for 5 minutes']]
+      AlarmDescription: !Join ['', ['Adding Instances if CPU utilization is greater than ', !Ref HighCPUAlarm, ' for 30 seconds']]
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: AutoScalingGroupName
@@ -292,7 +268,7 @@ Resources:
       EvaluationPeriods: '1'
       MetricName: CPUUtilization
       Namespace: AWS/EC2
-      Period: '300'
+      Period: '60'
       Statistic: Average
       Threshold: !Ref HighCPUAlarm
 
@@ -301,7 +277,7 @@ Resources:
     Properties:
       AlarmActions:
         - !Ref FleetScaleDown
-      AlarmDescription: !Join ['', ['Removing Instances if CPU utilization is less than ', !Ref LowCPUAlarm, ' for 5 minutes']]
+      AlarmDescription: !Join ['', ['Removing Instances if CPU utilization is less than ', !Ref LowCPUAlarm, ' for 30 seconds']]
       ComparisonOperator: LessThanThreshold
       Dimensions:
         - Name: AutoScalingGroupName
@@ -309,7 +285,7 @@ Resources:
       EvaluationPeriods: '1'
       MetricName: CPUUtilization
       Namespace: AWS/EC2
-      Period: '300'
+      Period: '60'
       Statistic: Average
       Threshold: !Ref LowCPUAlarm
 
