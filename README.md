@@ -2,11 +2,15 @@
 Needed to get my repo up and running
 
 Generate a new SSH key for a new machine
-ssh-keygen -t rsa -b 4096 -C "identified here"
+```bash
+$ ssh-keygen -t rsa -b 4096 -C "identified here"
+```
 
 Quickly add new SSH key to keys
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/yourkeyhere
+```bash
+$ eval "$(ssh-agent -s)"
+$ ssh-add ~/.ssh/yourkeyhere
+```
 
 Add new SSH key to github profile
 
@@ -60,6 +64,18 @@ Add new SSH key to github profile
  To https://github.com/user/repo.git
   * [new branch]  master -> master
  Branch master set up to track remote branch master from origin.
+```
+
+**Changing Remote URL**
+```bash
+$ git remote -v
+> origin  https://github.com/USERNAME/REPOSITORY.git (fetch)
+> origin  https://github.com/USERNAME/REPOSITORY.git (push)
+$ git remote set-url origin git@github.com:USERNAME/REPOSITORY.git
+$ git remote -v
+# Verify new remote URL
+> origin  git@github.com:USERNAME/REPOSITORY.git (fetch)
+> origin  git@github.com:USERNAME/REPOSITORY.git (push)
 ```
 
 
