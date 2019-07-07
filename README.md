@@ -14,6 +14,15 @@ $ ssh-add ~/.ssh/yourkeyhere
 
 Add new SSH key to github profile
 
+###### Choco Related:
+1. Set-ExecutionPolicy AllSigned; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+2. Install the following packages:
+    - 7zip
+    - wget
+    - putty
+    - sysinternals
+    - winscp
+
 ###### Git Related:
 **Setup new git config**
 
