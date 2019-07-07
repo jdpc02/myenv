@@ -22,6 +22,7 @@ Add new SSH key to github profile
     - putty
     - sysinternals
     - winscp
+    - bind-toolsonly
 
 ###### Git Related:
 **Setup new git config**
