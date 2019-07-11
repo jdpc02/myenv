@@ -1,0 +1,54 @@
+
+
+    If a SSH agent is running, ssh tries all keys loaded into the agent.
+
+    If an -i file option is given, ssh uses the specified key.
+
+    If IdentityFile is set in the command line or in ~/.ssh/config, ssh uses the specified key. (You can specify the keys per hostname or domain. See the ssh_config(5) manual page.)
+
+    Otherwise, it uses a hardcoded list {id_ecdsa, id_rsa, id_dsa} in the ~/.ssh directory.
+
+Out of these, ssh-agent might be the most convenient option – it also removes the need to unlock the private key every time. Use ssh-add ~/.ssh/id_dsa to load a key. If an agent is not running, start it with exec ssh-agent bash or using such tools as Keychain. (Normally, such environments as GNOME, Unity or Mac OS X should start an agent automatically.)
+
+If you decide against using ssh-agent, and you need to use different keys for different machines, you can edit ~/.ssh/config:
+
+Host one.example.com
+    IdentityFile ~/.ssh/id_one
+Host two.example.com
+    IdentityFile ~/.ssh/id_two
+Host *.foo.org
+    IdentityFile ~/.ssh/id_foo.org
+
+Note that the file name has absolutely no meaning to ssh; it will treat both id_dsa and id_asdfghjk identically. This means that you can name a RSA key id_dsa. However, it will not accept two keys in a single file.
+
+*****************************************************************
+ssh -T git@github.com
+> Hi username! You've successfully authenticated...
+
+*****************************************************************
+If you are using Git Bash, turn on ssh-agent:
+
+# start the ssh-agent in the background
+$ eval "$(ssh-agent -s)"
+> Agent pid 59566
+
+If you are using another terminal prompt, such as Git for Windows, turn on ssh-agent:
+
+# start the ssh-agent in the background
+$ eval $(ssh-agent -s)
+> Agent pid 59566
+
+$ ssh-add -l -E md5
+> 2048 MD5:a0:dd:42:3c:5a:9d:e4:2a:21:52:4e:78:07:6e:c8:4d /Users/you/.ssh/id_rsa (RSA)
+
+*****************************************************************
+From Git version 2.10.0, you can even configure this per repo or globally:
+
+git config core.sshCommand "ssh -v"
+git pull
+git push
+
+*****************************************************************
+git clone git@github.com:<org>/<repo>.git
+
+*****************************************************************
