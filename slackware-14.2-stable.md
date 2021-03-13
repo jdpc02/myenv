@@ -33,7 +33,7 @@
 		# SLACKVER=14.2
 		# mkdir multlib
 		# cd multilib
-		# lftp -c "open http://bear.alienbase.nl/mirrors/people/alien/multilib/ ; mirror -c -e ${SLACKVER}"
+		# lftp -c "open https://bear.alienbase.nl/mirrors/people/alien/multilib/ ; mirror -c -e ${SLACKVER}"
 		# cd ${SLACKVER}
 		```
 	* Install packages:
@@ -47,12 +47,12 @@
 		    # wget https://sourceforge.net/projects/slackpkgplus/files/slackpkg%2B-1.7.0-noarch-12mt.txz
 		    # installpkg slackpkg+-1.7.0-noarch-12mt.txz
 		    ```
-        2. Configure /etc/slackpkg/slackpkgplus.conf by uncommenting and/or modifying the following lines:
+            2. Configure /etc/slackpkg/slackpkgplus.conf by uncommenting and/or modifying the following lines:
 		    * PKGS_PRIORITY=( multilib )
 			* REPOPLUS=(slackpkgplus multilib)
-			* MIRRORPLUS['multilib']=http://bear.alienbase.nl/mirrors/people/alien/multilib/14.2/
-			* MIRRORPLUS['slackpkgplus']=http://slakfinder.org/slackpkg+dev/
-		3. Blacklist slackpkg+ for now as 1.7.4 complains about distribution. This is in prepartion for slackware-15.
+			* MIRRORPLUS['multilib']=https://bear.alienbase.nl/mirrors/people/alien/multilib/14.2/
+			* MIRRORPLUS['slackpkgplus']=https://slakfinder.org/slackpkg+dev/
+            3. Blacklist slackpkg+ for now as 1.7.4 complains about distribution. This is in prepartion for slackware-15.
 5. Rerun updates.
 6. Use generic kernel to minimize RAM usage.
     ```
