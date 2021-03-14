@@ -46,20 +46,20 @@
 	        ```
 		    # wget https://sourceforge.net/projects/slackpkgplus/files/slackpkg%2B-1.7.0-noarch-12mt.txz
 		    # installpkg slackpkg+-1.7.0-noarch-12mt.txz
-		    ```
+		```
             2. Configure /etc/slackpkg/slackpkgplus.conf by uncommenting and/or modifying the following lines:
-		    * PKGS_PRIORITY=( multilib )
-			* REPOPLUS=(slackpkgplus multilib)
-			* MIRRORPLUS['multilib']=https://bear.alienbase.nl/mirrors/people/alien/multilib/14.2/
-			* MIRRORPLUS['slackpkgplus']=https://slakfinder.org/slackpkg+dev/
+                * PKGS_PRIORITY=( multilib )
+                * REPOPLUS=(slackpkgplus multilib)
+                * MIRRORPLUS['multilib']=https://bear.alienbase.nl/mirrors/people/alien/multilib/14.2/
+                * MIRRORPLUS['slackpkgplus']=https://slakfinder.org/slackpkg+dev/
             3. Blacklist slackpkg+ for now as 1.7.4 complains about distribution. This is in prepartion for slackware-15.
 5. Rerun updates.
 6. Use generic kernel to minimize RAM usage.
     ```
-	# /usr/share/mkinitrd/mkinitrd_command_generator.sh # This gives the command to run to generate the initrd file
-	# mkinitrd -c -k 4.4.240 -f ext4 -r /dev/<root_partition> -m mptbase:mptscsih:mptspi:jbd2:mbcache:ext43 usb-storage:ehci-hcd:usbhid:ohci-hcd:mbcache:jbd2:ext4 -u -o /boot/initrd.gz
-	# /usr/share/mkinitrd/mkinitrd_command_generator.sh -l /boot/initrd.gz # This recommends the lilo entries to be added
-	# lilo -v
-	```
+    # /usr/share/mkinitrd/mkinitrd_command_generator.sh -k <kernel_version> # This gives the command to run to generate the initrd file
+    # mkinitrd -c -k 4.4.240 -f ext4 -r /dev/<root_partition> -m mptbase:mptscsih:mptspi:jbd2:mbcache:ext43 usb-storage:ehci-hcd:usbhid:ohci-hcd:mbcache:jbd2:ext4 -u -o /boot/initrd.gz
+    # /usr/share/mkinitrd/mkinitrd_command_generator.sh -l /boot/vmkernel-generic # This recommends the lilo entries to be added
+    # lilo -v
+    ```
    Whenever the kernel is updated, you need to regenerate the initrd.gz entry.
 
