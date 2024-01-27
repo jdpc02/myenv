@@ -18,11 +18,28 @@ Add new SSH key to github profile
 1. Set-ExecutionPolicy AllSigned; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 2. Install the following packages:
     - 7zip
-    - wget
-    - putty
-    - sysinternals
-    - winscp
     - bind-toolsonly
+    - exiftool
+    - freetube
+    - git
+    - jq
+    - packer
+    - powershell-core
+    - putty
+    - sdelete
+    - sysinternals
+    - vagrant
+    - virtualbox
+    - virtualbox-guest-additions-guest.install
+    - wget
+    - winscp
+    - yt-dlp
+3. Pin the following choco packages:
+    - choco pin add -n=vagrant --version 2.4.1
+    - choco pin add -n=virtualbox --version 7.0.14
+    - choco pin add -n="virtualbox-guest-additions-guest.install" --version 7.0.14
+4. Install cinc-workstation:
+    - . { iwr -useb https://omnitruck.cinc.sh/install.ps1 } | iex; install -project cinc-workstation -version 23
 
 ###### Git Related:
 **Setup new git config**
